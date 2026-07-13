@@ -1,11 +1,14 @@
-import json
+import logging
 import os
 from pathlib import Path
+from typing import Any
 
 from dotenv import load_dotenv
 from openai import OpenAI
+from openai.types.responses import Response
 
-from learning_agent.tools import calculate
+
+logger = logging.getLogger("LLMClient")
 
 
 class LLMClient:
@@ -14,107 +17,41 @@ class LLMClient:
         load_dotenv(project_root / ".env")
 
         api_key = os.environ["OPENAI_API_KEY"]
+
         self.model = os.environ["OPENAI_MODEL"]
-
         self.client = OpenAI(api_key=api_key)
-        self.previous_response_id: str | None = None
 
-        self.instructions = (
-            "Je bent een behulpzame docent die AI-concepten helder en "
-            "beknopt in het Nederlands uitlegt. "
-            "Gebruik de calculator voor rekenkundige bewerkingen."
+    def create_response(
+        self,
+        *,
+        input_data: str | list[dict[str, str]],
+        instructions: str,
+        tools: list[dict[str, Any]],
+        previous_response_id: str | None = None,
+    ) -> Response:
+        logger.info(
+            "Response aanvragen (model=%s, vervolg=%s, input=%s)",
+            self.model,
+            previous_response_id is not None,
+            type(input_data).__name__,
         )
 
-        self.tools = [
-            {
-                "type": "function",
-                "name": "calculate",
-                "description": (
-                    "Voer een eenvoudige rekenkundige bewerking uit op twee getallen."
-                ),
-                "parameters": {
-                    "type": "object",
-                    "properties": {
-                        "a": {
-                            "type": "number",
-                            "description": "Het eerste getal.",
-                        },
-                        "b": {
-                            "type": "number",
-                            "description": "Het tweede getal.",
-                        },
-                        "operation": {
-                            "type": "string",
-                            "enum": [
-                                "add",
-                                "subtract",
-                                "multiply",
-                                "divide",
-                            ],
-                            "description": "De uit te voeren bewerking.",
-                        },
-                    },
-                    "required": ["a", "b", "operation"],
-                    "additionalProperties": False,
-                },
-                "strict": True,
-            }
-        ]
-
-    def ask(self, question: str) -> str:
-        response = self._create_response(question)
-
-        tool_outputs: list[dict[str, str]] = []
-
-        for item in response.output:
-            if item.type != "function_call":
-                continue
-
-            if item.name != "calculate":
-                raise ValueError(f"Onbekende tool: {item.name}")
-
-            arguments = json.loads(item.arguments)
-
-            result = calculate(
-                a=arguments["a"],
-                b=arguments["b"],
-                operation=arguments["operation"],
-            )
-
-            tool_outputs.append(
-                {
-                    "type": "function_call_output",
-                    "call_id": item.call_id,
-                    "output": str(result),
-                }
-            )
-
-        if tool_outputs:
+        if previous_response_id is None:
             response = self.client.responses.create(
                 model=self.model,
-                instructions=self.instructions,
-                tools=self.tools,
-                previous_response_id=response.id,
-                input=tool_outputs,
+                instructions=instructions,
+                tools=tools,
+                input=input_data,
             )
-
-        self.previous_response_id = response.id
-
-        return response.output_text
-
-    def _create_response(self, question: str):
-        if self.previous_response_id is None:
-            return self.client.responses.create(
+        else:
+            response = self.client.responses.create(
                 model=self.model,
-                instructions=self.instructions,
-                tools=self.tools,
-                input=question,
+                instructions=instructions,
+                tools=tools,
+                input=input_data,
+                previous_response_id=previous_response_id,
             )
 
-        return self.client.responses.create(
-            model=self.model,
-            instructions=self.instructions,
-            tools=self.tools,
-            input=question,
-            previous_response_id=self.previous_response_id,
-        )
+        logger.info("Response ontvangen")
+
+        return response

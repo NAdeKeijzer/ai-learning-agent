@@ -1,55 +1,39 @@
-import os
-from pathlib import Path
+import logging
 
-from dotenv import load_dotenv
-from openai import OpenAI
+from learning_agent.agent import Agent
+from learning_agent.llm import LLMClient
+
+
+def configure_logging() -> None:
+    logging.basicConfig(
+        level=logging.INFO,
+        format="%(levelname)s | %(name)s | %(message)s",
+    )
+    logging.getLogger("httpx").setLevel(logging.WARNING)
 
 
 def main() -> None:
-    project_root = Path(__file__).resolve().parents[2]
-    load_dotenv(project_root / ".env")
+    configure_logging()
 
-    api_key = os.environ["OPENAI_API_KEY"]
-    model = os.environ["OPENAI_MODEL"]
-
-    client = OpenAI(api_key=api_key)
-    previous_response_id: str | None = None
-
-    instructions = (
-        "Je bent een behulpzame docent die AI-concepten helder en "
-        "beknopt in het Nederlands uitlegt."
-    )
+    llm_client = LLMClient()
+    agent = Agent(llm_client)
 
     print("AI learning agent")
     print("Typ 'exit' om te stoppen.\n")
 
     while True:
-        user_input = input("Jij: ").strip()
+        question = input("Jij: ").strip()
 
-        if user_input.lower() == "exit":
+        if question.lower() == "exit":
             print("Tot ziens!")
             break
 
-        if not user_input:
+        if not question:
             continue
 
-        if previous_response_id is None:
-            response = client.responses.create(
-                model=model,
-                instructions=instructions,
-                input=user_input,
-            )
-        else:
-            response = client.responses.create(
-                model=model,
-                instructions=instructions,
-                input=user_input,
-                previous_response_id=previous_response_id,
-            )
+        answer = agent.ask(question)
 
-        # Deze regels horen binnen while, maar buiten het if/else-blok.
-        print(f"\nAI: {response.output_text}\n")
-        previous_response_id = response.id
+        print(f"\nAI: {answer}\n")
 
 
 if __name__ == "__main__":
