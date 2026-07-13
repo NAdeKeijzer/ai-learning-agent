@@ -7,35 +7,49 @@ from openai import OpenAI
 
 def main() -> None:
     project_root = Path(__file__).resolve().parents[2]
-    env_file = project_root / ".env"
+    load_dotenv(project_root / ".env")
 
-    loaded = load_dotenv(dotenv_path=env_file)
-
-    print(f".env-pad: {env_file}")
-    print(f".env bestaat: {env_file.exists()}")
-    print(f".env geladen: {loaded}")
-
-    api_key = os.getenv("OPENAI_API_KEY")
-    model = os.getenv("OPENAI_MODEL")
-
-    if not api_key:
-        raise RuntimeError(
-            "OPENAI_API_KEY ontbreekt. Voeg deze toe aan het .env-bestand."
-        )
-
-    if not model:
-        raise RuntimeError(
-            "OPENAI_MODEL ontbreekt. Voeg deze toe aan het .env-bestand."
-        )
+    api_key = os.environ["OPENAI_API_KEY"]
+    model = os.environ["OPENAI_MODEL"]
 
     client = OpenAI(api_key=api_key)
+    previous_response_id: str | None = None
 
-    response = client.responses.create(
-        model=model,
-        input="Leg in maximaal drie zinnen uit wat een AI-agent is.",
+    instructions = (
+        "Je bent een behulpzame docent die AI-concepten helder en "
+        "beknopt in het Nederlands uitlegt."
     )
 
-    print(response.output_text)
+    print("AI learning agent")
+    print("Typ 'exit' om te stoppen.\n")
+
+    while True:
+        user_input = input("Jij: ").strip()
+
+        if user_input.lower() == "exit":
+            print("Tot ziens!")
+            break
+
+        if not user_input:
+            continue
+
+        if previous_response_id is None:
+            response = client.responses.create(
+                model=model,
+                instructions=instructions,
+                input=user_input,
+            )
+        else:
+            response = client.responses.create(
+                model=model,
+                instructions=instructions,
+                input=user_input,
+                previous_response_id=previous_response_id,
+            )
+
+        # Deze regels horen binnen while, maar buiten het if/else-blok.
+        print(f"\nAI: {response.output_text}\n")
+        previous_response_id = response.id
 
 
 if __name__ == "__main__":
