@@ -2,7 +2,8 @@ import logging
 from typing import Any
 
 
-logger = logging.getLogger("Calculator")
+calculator_logger = logging.getLogger("Calculator")
+word_count_logger = logging.getLogger("WordCount")
 
 
 class CalculatorTool:
@@ -49,7 +50,7 @@ class CalculatorTool:
         b = arguments["b"]
         operation = arguments["operation"]
 
-        logger.info(
+        calculator_logger.info(
             "Berekening uitvoeren: a=%s, b=%s, operation=%s",
             a,
             b,
@@ -70,6 +71,41 @@ class CalculatorTool:
             case _:
                 raise ValueError(f"Onbekende bewerking: {operation}")
 
-        logger.info("Berekening afgerond: resultaat=%s", result)
+        calculator_logger.info("Berekening afgerond: resultaat=%s", result)
 
         return result
+
+
+class WordCountTool:
+    name = "count_words"
+
+    @property
+    def definition(self) -> dict[str, Any]:
+        return {
+            "type": "function",
+            "name": self.name,
+            "description": "Tel het aantal woorden in een tekst.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "text": {
+                        "type": "string",
+                        "description": "De tekst waarvan de woorden geteld moeten worden.",
+                    },
+                },
+                "required": ["text"],
+                "additionalProperties": False,
+            },
+            "strict": True,
+        }
+
+    def execute(self, arguments: dict[str, Any]) -> int:
+        text = arguments["text"]
+
+        word_count_logger.info("Woorden tellen in tekst")
+
+        word_count = len(text.split())
+
+        word_count_logger.info("Aantal woorden: %s", word_count)
+
+        return word_count

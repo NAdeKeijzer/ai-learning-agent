@@ -25,8 +25,11 @@ class Agent:
         self.instructions = (
             "Je bent een behulpzame docent die AI-concepten helder en "
             "beknopt in het Nederlands uitlegt. "
-            "Gebruik de calculator voor rekenkundige bewerkingen."
-        )
+            "Gebruik beschikbare tools wanneer die geschikt zijn voor de vraag. "
+            "Gebruik de calculator voor rekenkundige bewerkingen en de "
+            "woordenteller voor het tellen van woorden."
+)
+
 
         self.tools = self.tool_registry.definitions
 

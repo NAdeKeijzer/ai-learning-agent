@@ -5,11 +5,9 @@ class Tool(Protocol):
     name: str
 
     @property
-    def definition(self) -> dict[str, Any]:
-        ...
+    def definition(self) -> dict[str, Any]: ...
 
-    def execute(self, arguments: dict[str, Any]) -> Any:
-        ...
+    def execute(self, arguments: dict[str, Any]) -> Any: ...
 
 
 class ToolRegistry:

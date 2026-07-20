@@ -3,7 +3,7 @@ import logging
 from learning_agent.agent import Agent
 from learning_agent.llm import LLMClient
 from learning_agent.tool_registry import ToolRegistry
-from learning_agent.tools import CalculatorTool
+from learning_agent.tools import CalculatorTool, WordCountTool
 
 
 def configure_logging() -> None:
@@ -21,6 +21,7 @@ def main() -> None:
 
     tool_registry = ToolRegistry()
     tool_registry.register(CalculatorTool())
+    tool_registry.register(WordCountTool())
 
     agent = Agent(
         llm_client=llm_client,
