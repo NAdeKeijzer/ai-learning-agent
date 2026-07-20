@@ -5,7 +5,6 @@ from openai.types.responses import ResponseFunctionToolCall
 
 from learning_agent.llm import LLMClient
 from learning_agent.tool_registry import ToolRegistry
-from learning_agent.tools import CalculatorTool
 
 
 logger = logging.getLogger("Agent")
@@ -14,8 +13,13 @@ logger = logging.getLogger("Agent")
 class Agent:
     MAX_STEPS = 5
 
-    def __init__(self, llm_client: LLMClient) -> None:
+    def __init__(
+        self,
+        llm_client: LLMClient,
+        tool_registry: ToolRegistry,
+    ) -> None:
         self.llm_client = llm_client
+        self.tool_registry = tool_registry
         self.previous_response_id: str | None = None
 
         self.instructions = (
@@ -23,9 +27,6 @@ class Agent:
             "beknopt in het Nederlands uitlegt. "
             "Gebruik de calculator voor rekenkundige bewerkingen."
         )
-
-        self.tool_registry = ToolRegistry()
-        self.tool_registry.register(CalculatorTool())
 
         self.tools = self.tool_registry.definitions
 
@@ -75,9 +76,7 @@ class Agent:
         logger.info("Tool aangevraagd: %s", tool_call.name)
 
         arguments = json.loads(tool_call.arguments)
-
         tool = self.tool_registry.get(tool_call.name)
-
         result = tool.execute(arguments)
 
         return {

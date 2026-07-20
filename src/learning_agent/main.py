@@ -2,6 +2,8 @@ import logging
 
 from learning_agent.agent import Agent
 from learning_agent.llm import LLMClient
+from learning_agent.tool_registry import ToolRegistry
+from learning_agent.tools import CalculatorTool
 
 
 def configure_logging() -> None:
@@ -16,7 +18,14 @@ def main() -> None:
     configure_logging()
 
     llm_client = LLMClient()
-    agent = Agent(llm_client)
+
+    tool_registry = ToolRegistry()
+    tool_registry.register(CalculatorTool())
+
+    agent = Agent(
+        llm_client=llm_client,
+        tool_registry=tool_registry,
+    )
 
     print("AI learning agent")
     print("Typ 'exit' om te stoppen.\n")
