@@ -1,31 +1,75 @@
 import logging
+from typing import Any
 
 
 logger = logging.getLogger("Calculator")
 
 
-def calculate(a: float, b: float, operation: str) -> float:
-    logger.info(
-        "Berekening uitvoeren: a=%s, b=%s, operation=%s",
-        a,
-        b,
-        operation,
-    )
+class CalculatorTool:
+    name = "calculate"
 
-    match operation:
-        case "add":
-            result = a + b
-        case "subtract":
-            result = a - b
-        case "multiply":
-            result = a * b
-        case "divide":
-            if b == 0:
-                raise ValueError("Delen door nul is niet toegestaan.")
-            result = a / b
-        case _:
-            raise ValueError(f"Onbekende bewerking: {operation}")
+    @property
+    def definition(self) -> dict[str, Any]:
+        return {
+            "type": "function",
+            "name": self.name,
+            "description": (
+                "Voer een eenvoudige rekenkundige bewerking uit op twee getallen."
+            ),
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "a": {
+                        "type": "number",
+                        "description": "Het eerste getal.",
+                    },
+                    "b": {
+                        "type": "number",
+                        "description": "Het tweede getal.",
+                    },
+                    "operation": {
+                        "type": "string",
+                        "enum": [
+                            "add",
+                            "subtract",
+                            "multiply",
+                            "divide",
+                        ],
+                        "description": "De uit te voeren bewerking.",
+                    },
+                },
+                "required": ["a", "b", "operation"],
+                "additionalProperties": False,
+            },
+            "strict": True,
+        }
 
-    logger.info("Berekening afgerond: resultaat=%s", result)
+    def execute(self, arguments: dict[str, Any]) -> float:
+        a = arguments["a"]
+        b = arguments["b"]
+        operation = arguments["operation"]
 
-    return result
+        logger.info(
+            "Berekening uitvoeren: a=%s, b=%s, operation=%s",
+            a,
+            b,
+            operation,
+        )
+
+        match operation:
+            case "add":
+                result = a + b
+            case "subtract":
+                result = a - b
+            case "multiply":
+                result = a * b
+            case "divide":
+                if b == 0:
+                    raise ValueError("Delen door nul is niet toegestaan.")
+                result = a / b
+            case _:
+                raise ValueError(f"Onbekende bewerking: {operation}")
+
+        logger.info("Berekening afgerond: resultaat=%s", result)
+
+        return result

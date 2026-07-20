@@ -1,11 +1,11 @@
 import json
 import logging
-from typing import Any
 
 from openai.types.responses import ResponseFunctionToolCall
 
 from learning_agent.llm import LLMClient
-from learning_agent.tools import calculate
+from learning_agent.tool_registry import ToolRegistry
+from learning_agent.tools import CalculatorTool
 
 
 logger = logging.getLogger("Agent")
@@ -24,41 +24,10 @@ class Agent:
             "Gebruik de calculator voor rekenkundige bewerkingen."
         )
 
-        self.tools: list[dict[str, Any]] = [
-            {
-                "type": "function",
-                "name": "calculate",
-                "description": (
-                    "Voer een eenvoudige rekenkundige bewerking uit op twee getallen."
-                ),
-                "parameters": {
-                    "type": "object",
-                    "properties": {
-                        "a": {
-                            "type": "number",
-                            "description": "Het eerste getal.",
-                        },
-                        "b": {
-                            "type": "number",
-                            "description": "Het tweede getal.",
-                        },
-                        "operation": {
-                            "type": "string",
-                            "enum": [
-                                "add",
-                                "subtract",
-                                "multiply",
-                                "divide",
-                            ],
-                            "description": "De uit te voeren bewerking.",
-                        },
-                    },
-                    "required": ["a", "b", "operation"],
-                    "additionalProperties": False,
-                },
-                "strict": True,
-            }
-        ]
+        self.tool_registry = ToolRegistry()
+        self.tool_registry.register(CalculatorTool())
+
+        self.tools = self.tool_registry.definitions
 
     def ask(self, question: str) -> str:
         logger.info("Nieuwe gebruikersvraag ontvangen")
@@ -105,16 +74,11 @@ class Agent:
     ) -> dict[str, str]:
         logger.info("Tool aangevraagd: %s", tool_call.name)
 
-        if tool_call.name != "calculate":
-            raise ValueError(f"Onbekende tool: {tool_call.name}")
-
         arguments = json.loads(tool_call.arguments)
 
-        result = calculate(
-            a=arguments["a"],
-            b=arguments["b"],
-            operation=arguments["operation"],
-        )
+        tool = self.tool_registry.get(tool_call.name)
+
+        result = tool.execute(arguments)
 
         return {
             "type": "function_call_output",
