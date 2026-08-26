@@ -29,7 +29,7 @@ def main() -> None:
     )
 
     print("AI learning agent")
-print("Type 'exit' to quit.\n")
+    print("Type 'exit' to quit.\n")
 
     while True:
         question = input("You: ").strip()
