@@ -22,7 +22,7 @@ def test_get_unknown_tool_raises_error(
 ) -> None:
     with pytest.raises(
         ValueError,
-        match="Onbekende tool: unknown",
+        match="Unknown tool: unknown",
     ):
         registry.get("unknown")
 
@@ -34,7 +34,7 @@ def test_register_duplicate_tool_raises_error(
 
     with pytest.raises(
         ValueError,
-        match="Tool is al geregistreerd: calculator",
+        match="Tool is already registered: calculator",
     ):
         registry.register(CalculatorTool())
 

@@ -53,7 +53,7 @@ def test_agent_returns_direct_llm_answer() -> None:
         responses=[
             FakeResponse(
                 id="response-1",
-                output_text="Kafka is een event streaming platform.",
+                output_text="Kafka is an event streaming platform.",
                 output=[],
             )
         ]
@@ -64,9 +64,9 @@ def test_agent_returns_direct_llm_answer() -> None:
         tool_registry=ToolRegistry(),
     )
 
-    result = agent.ask("Wat is Kafka?")
+    result = agent.ask("What is Kafka?")
 
-    assert result == "Kafka is een event streaming platform."
+    assert result == "Kafka is an event streaming platform."
     assert agent.previous_response_id == "response-1"
     assert len(llm_client.calls) == 1
 
@@ -88,7 +88,7 @@ def test_agent_executes_tool_call_and_returns_final_answer() -> None:
             ),
             FakeResponse(
                 id="response-2",
-                output_text="6 keer 7 is 42.",
+                output_text="6 times 7 is 42.",
                 output=[],
             ),
         ]
@@ -102,9 +102,9 @@ def test_agent_executes_tool_call_and_returns_final_answer() -> None:
         tool_registry=tool_registry,
     )
 
-    result = agent.ask("Wat is 6 keer 7?")
+    result = agent.ask("What is 6 times 7?")
 
-    assert result == "6 keer 7 is 42."
+    assert result == "6 times 7 is 42."
     assert agent.previous_response_id == "response-2"
     assert len(llm_client.calls) == 2
 
@@ -149,7 +149,7 @@ def test_agent_handles_multiple_tool_calls() -> None:
             ),
             FakeResponse(
                 id="response-3",
-                output_text="Het resultaat is 100.",
+                output_text="The result is 100.",
                 output=[],
             ),
         ]
@@ -163,9 +163,9 @@ def test_agent_handles_multiple_tool_calls() -> None:
         tool_registry=tool_registry,
     )
 
-    result = agent.ask("Tel 12 en 8 op en vermenigvuldig het resultaat daarna met 5.")
+    result = agent.ask("Add 12 and 8, then multiply the result by 5.")
 
-    assert result == "Het resultaat is 100."
+    assert result == "The result is 100."
     assert agent.previous_response_id == "response-3"
     assert len(llm_client.calls) == 3
 
@@ -211,9 +211,9 @@ def test_agent_raises_error_for_unknown_tool() -> None:
 
     with pytest.raises(
         ValueError,
-        match="Onbekende tool: unknown_tool",
+        match="Unknown tool: unknown_tool",
     ):
-        agent.ask("Gebruik een onbekende tool.")
+        agent.ask("Use an unknown tool.")
 
 
 def test_agent_raises_error_when_max_steps_is_reached() -> None:
@@ -243,10 +243,7 @@ def test_agent_raises_error_when_max_steps_is_reached() -> None:
         tool_registry=tool_registry,
     )
 
-    with pytest.raises(
-        RuntimeError,
-        match="Agent heeft het maximum van 5 stappen bereikt.",
-    ):
+    with pytest.raises(RuntimeError, match="Agent reached the maximum of 5 steps."):
         agent.ask("Keep calculating.")
 
     assert len(llm_client.calls) == Agent.MAX_STEPS + 1

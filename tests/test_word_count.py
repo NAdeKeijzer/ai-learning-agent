@@ -9,9 +9,7 @@ def word_count_tool() -> WordCountTool:
 
 
 def test_counts_words(word_count_tool: WordCountTool) -> None:
-    result = word_count_tool.execute(
-        {"text": "AI agents kunnen meerdere tools gebruiken"}
-    )
+    result = word_count_tool.execute({"text": "AI agents can use multiple tools"})
 
     assert result == "6"
 
@@ -33,7 +31,7 @@ def test_single_word(word_count_tool: WordCountTool) -> None:
 def test_ignores_multiple_spaces(
     word_count_tool: WordCountTool,
 ) -> None:
-    result = word_count_tool.execute({"text": "AI   agents   gebruiken   tools"})
+    result = word_count_tool.execute({"text": "AI   agents   use   tools"})
 
     assert result == "4"
 
@@ -41,7 +39,7 @@ def test_ignores_multiple_spaces(
 def test_handles_newlines_and_tabs(
     word_count_tool: WordCountTool,
 ) -> None:
-    result = word_count_tool.execute({"text": "AI\nagents\tgebruiken tools"})
+    result = word_count_tool.execute({"text": "AI\nagents\tuse tools"})
 
     assert result == "4"
 
@@ -49,6 +47,6 @@ def test_handles_newlines_and_tabs(
 def test_leading_and_trailing_whitespace(
     word_count_tool: WordCountTool,
 ) -> None:
-    result = word_count_tool.execute({"text": "   AI agents gebruiken tools   "})
+    result = word_count_tool.execute({"text": "   AI agents use tools   "})
 
     assert result == "4"

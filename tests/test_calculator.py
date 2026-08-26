@@ -76,7 +76,7 @@ def test_division_by_zero_raises_error(calculator: CalculatorTool) -> None:
 def test_function_call_is_rejected(calculator: CalculatorTool) -> None:
     with pytest.raises(
         ValueError,
-        match="Ongeldige rekenkundige expressie",
+        match="Invalid arithmetic expression",
     ):
         calculator.execute({"expression": "print('hello')"})
 
@@ -84,6 +84,6 @@ def test_function_call_is_rejected(calculator: CalculatorTool) -> None:
 def test_variable_is_rejected(calculator: CalculatorTool) -> None:
     with pytest.raises(
         ValueError,
-        match="Ongeldige rekenkundige expressie",
+        match="Invalid arithmetic expression",
     ):
         calculator.execute({"expression": "some_variable + 1"})
