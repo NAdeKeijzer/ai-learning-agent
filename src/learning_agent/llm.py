@@ -30,7 +30,7 @@ class LLMClient:
         previous_response_id: str | None = None,
     ) -> Response:
         logger.info(
-            "Response aanvragen (model=%s, vervolg=%s, input=%s)",
+            "Requesting response (model=%s, continuation=%s, input=%s)",
             self.model,
             previous_response_id is not None,
             type(input_data).__name__,
@@ -52,6 +52,6 @@ class LLMClient:
                 previous_response_id=previous_response_id,
             )
 
-        logger.info("Response ontvangen")
+        logger.info("Response received")
 
         return response

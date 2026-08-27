@@ -23,17 +23,17 @@ class Agent:
         self.previous_response_id: str | None = None
 
         self.instructions = (
-            "Je bent een behulpzame docent die AI-concepten helder en "
-            "beknopt in het Nederlands uitlegt. "
-            "Gebruik beschikbare tools wanneer die geschikt zijn voor de vraag. "
-            "Gebruik de calculator voor rekenkundige bewerkingen en de "
-            "woordenteller voor het tellen van woorden."
+            "You are a helpful teacher who explains AI concepts clearly "
+            "and concisely. "
+            "Use the available tools when they are appropriate for the question. "
+            "Use the calculator for arithmetic operations and the word counter "
+            "for counting words."
         )
 
         self.tools = self.tool_registry.definitions
 
     def ask(self, question: str) -> str:
-        logger.info("Nieuwe gebruikersvraag ontvangen")
+        logger.info("New user question received")
 
         response = self.llm_client.create_response(
             input_data=question,
@@ -43,18 +43,18 @@ class Agent:
         )
 
         for step in range(1, self.MAX_STEPS + 1):
-            logger.info("Agentstap %s van %s", step, self.MAX_STEPS)
+            logger.info("Agent step %s of %s", step, self.MAX_STEPS)
 
             tool_calls = [
                 item for item in response.output if item.type == "function_call"
             ]
 
             if not tool_calls:
-                logger.info("Geen toolaanroepen; eindantwoord ontvangen")
+                logger.info("No tool calls; final answer received")
                 self.previous_response_id = response.id
                 return response.output_text
 
-            logger.info("%s toolaanroep(en) ontvangen", len(tool_calls))
+            logger.info("%s tool call(s) received", len(tool_calls))
 
             tool_outputs = [
                 self._execute_tool_call(tool_call) for tool_call in tool_calls
@@ -67,15 +67,13 @@ class Agent:
                 previous_response_id=response.id,
             )
 
-        raise RuntimeError(
-            f"Agent heeft het maximum van {self.MAX_STEPS} stappen bereikt."
-        )
+        raise RuntimeError(f"Agent reached the maximum of {self.MAX_STEPS} steps.")
 
     def _execute_tool_call(
         self,
         tool_call: ResponseFunctionToolCall,
     ) -> dict[str, str]:
-        logger.info("Tool aangevraagd: %s", tool_call.name)
+        logger.info("Tool requested: %s", tool_call.name)
 
         arguments = json.loads(tool_call.arguments)
         tool = self.tool_registry.get(tool_call.name)

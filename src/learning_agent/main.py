@@ -29,13 +29,13 @@ def main() -> None:
     )
 
     print("AI learning agent")
-    print("Typ 'exit' om te stoppen.\n")
+    print("Type 'exit' to quit.\n")
 
     while True:
-        question = input("Jij: ").strip()
+        question = input("You: ").strip()
 
         if question.lower() == "exit":
-            print("Tot ziens!")
+            print("Goodbye!")
             break
 
         if not question:

@@ -29,13 +29,13 @@ class CalculatorTool:
         return {
             "type": "function",
             "name": self.name,
-            "description": "Voert een rekenkundige berekening uit.",
+            "description": "Performs an arithmetic calculation.",
             "parameters": {
                 "type": "object",
                 "properties": {
                     "expression": {
                         "type": "string",
-                        "description": "De rekenkundige expressie.",
+                        "description": "The arithmetic expression.",
                     }
                 },
                 "required": ["expression"],
@@ -47,7 +47,7 @@ class CalculatorTool:
     def execute(self, arguments: dict[str, Any]) -> str:
         expression = arguments["expression"]
 
-        logger.info("Berekening uitvoeren: %s", expression)
+        logger.info("Performing calculation: %s", expression)
 
         parsed_expression = ast.parse(expression, mode="eval")
         result = self._evaluate(parsed_expression.body)
@@ -62,8 +62,7 @@ class CalculatorTool:
             operator_function = _OPERATORS.get(type(node.op))
 
             if operator_function is None:
-                raise ValueError("Niet-ondersteunde rekenkundige operator.")
-
+                raise ValueError("Unsupported arithmetic operator.")
             left = self._evaluate(node.left)
             right = self._evaluate(node.right)
 
@@ -73,8 +72,8 @@ class CalculatorTool:
             operator_function = _OPERATORS.get(type(node.op))
 
             if operator_function is None:
-                raise ValueError("Niet-ondersteunde rekenkundige operator.")
+                raise ValueError("Unsupported arithmetic operator.")
 
             return operator_function(self._evaluate(node.operand))
 
-        raise ValueError("Ongeldige rekenkundige expressie.")
+        raise ValueError("Invalid arithmetic expression.")

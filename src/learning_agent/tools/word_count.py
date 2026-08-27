@@ -15,13 +15,13 @@ class WordCountTool:
         return {
             "type": "function",
             "name": self.name,
-            "description": "Telt het aantal woorden in een tekst.",
+            "description": "Counts the number of words in a text.",
             "parameters": {
                 "type": "object",
                 "properties": {
                     "text": {
                         "type": "string",
-                        "description": "De tekst waarvan de woorden worden geteld.",
+                        "description": "The text whose words should be counted.",
                     }
                 },
                 "required": ["text"],
@@ -34,6 +34,6 @@ class WordCountTool:
         text = arguments["text"]
         word_count = len(text.split())
 
-        logger.info("Aantal woorden geteld: %s", word_count)
+        logger.info("Word count: %s", word_count)
 
         return str(word_count)
