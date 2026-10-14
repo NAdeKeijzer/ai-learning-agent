@@ -28,6 +28,7 @@ class LLMClient:
         instructions: str,
         tools: list[dict[str, Any]],
         previous_response_id: str | None = None,
+        tool_choice: str | dict[str, Any] | None = None,
     ) -> Response:
         logger.info(
             "Requesting response (model=%s, continuation=%s, input=%s)",
@@ -42,6 +43,7 @@ class LLMClient:
                 instructions=instructions,
                 tools=tools,
                 input=input_data,
+                tool_choice=tool_choice,
             )
         else:
             response = self.client.responses.create(
@@ -50,6 +52,7 @@ class LLMClient:
                 tools=tools,
                 input=input_data,
                 previous_response_id=previous_response_id,
+                tool_choice=tool_choice,
             )
 
         logger.info("Response received")

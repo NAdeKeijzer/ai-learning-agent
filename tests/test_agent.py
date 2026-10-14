@@ -247,3 +247,51 @@ def test_agent_raises_error_when_max_steps_is_reached() -> None:
         agent.ask("Keep calculating.")
 
     assert len(llm_client.calls) == Agent.MAX_STEPS + 1
+
+
+def test_agent_includes_memory_tool_instructions() -> None:
+    llm_client = FakeLLMClient(
+        responses=[
+            FakeResponse(
+                id="response-1",
+                output_text="I can help with that.",
+                output=[],
+            )
+        ]
+    )
+
+    agent = Agent(
+        llm_client=llm_client,
+        tool_registry=ToolRegistry(),
+    )
+
+    agent.ask("Hello")
+
+    instructions = llm_client.calls[0]["instructions"]
+
+    assert "remember tool" in instructions
+    assert "get_memory tool" in instructions
+    assert "forget tool" in instructions
+    assert "unless the corresponding tool confirms the operation" in instructions
+
+
+def test_agent_does_not_require_a_tool_for_general_questions() -> None:
+    llm_client = FakeLLMClient(
+        responses=[
+            FakeResponse(
+                id="response-1",
+                output_text="Kafka is an event streaming platform.",
+                output=[],
+            )
+        ]
+    )
+
+    agent = Agent(
+        llm_client=llm_client,
+        tool_registry=ToolRegistry(),
+    )
+
+    result = agent.ask("What is Kafka?")
+
+    assert result == "Kafka is an event streaming platform."
+    assert len(llm_client.calls) == 1
