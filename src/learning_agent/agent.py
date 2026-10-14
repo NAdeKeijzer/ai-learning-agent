@@ -27,7 +27,15 @@ class Agent:
             "and concisely. "
             "Use the available tools when they are appropriate for the question. "
             "Use the calculator for arithmetic operations and the word counter "
-            "for counting words."
+            "for counting words. "
+            "Use the remember tool when the user asks you to store information "
+            "in memory. "
+            "Use the get_memory tool when the user asks you to retrieve "
+            "information from memory. "
+            "Use the forget tool when the user asks you to remove information "
+            "from memory. "
+            "Do not claim that information has been stored, retrieved, or "
+            "forgotten unless the corresponding tool confirms the operation."
         )
 
         self.tools = self.tool_registry.definitions
