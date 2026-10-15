@@ -1,11 +1,15 @@
+import pytest
+
 from dataclasses import dataclass
 from typing import Any
-
-import pytest
 
 from learning_agent.agent import Agent
 from learning_agent.tool_registry import ToolRegistry
 from learning_agent.tools import CalculatorTool
+from learning_agent.memory import SessionMemory
+from learning_agent.tools.forget import ForgetTool
+from learning_agent.tools.get_memory import GetMemoryTool
+from learning_agent.tools.remember import RememberTool
 
 
 @dataclass
@@ -35,6 +39,7 @@ class FakeLLMClient:
         instructions: str,
         tools: list[dict[str, Any]],
         previous_response_id: str | None = None,
+        tool_choice: str | dict[str, Any] | None = None,
     ) -> FakeResponse:
         self.calls.append(
             {
@@ -42,6 +47,7 @@ class FakeLLMClient:
                 "instructions": instructions,
                 "tools": tools,
                 "previous_response_id": previous_response_id,
+                "tool_choice": tool_choice,
             }
         )
 
@@ -295,3 +301,156 @@ def test_agent_does_not_require_a_tool_for_general_questions() -> None:
 
     assert result == "Kafka is an event streaming platform."
     assert len(llm_client.calls) == 1
+
+
+def test_agent_forces_remember_tool_for_explicit_memory_request() -> None:
+    llm_client = FakeLLMClient(
+        responses=[
+            FakeResponse(
+                id="response-1",
+                output_text="",
+                output=[
+                    FakeFunctionCall(
+                        type="function_call",
+                        name="remember",
+                        arguments='{"key": "language", "value": "Python"}',
+                        call_id="call-1",
+                    )
+                ],
+            ),
+            FakeResponse(
+                id="response-2",
+                output_text="I have remembered that you prefer Python.",
+                output=[],
+            ),
+        ]
+    )
+
+    memory = SessionMemory()
+    tool_registry = ToolRegistry()
+    tool_registry.register(RememberTool(memory))
+
+    agent = Agent(
+        llm_client=llm_client,
+        tool_registry=tool_registry,
+    )
+
+    result = agent.ask("Remember that I prefer Python.")
+
+    assert result == "I have remembered that you prefer Python."
+    assert memory.get("language") == "Python"
+    assert llm_client.calls[0]["tool_choice"] == {
+        "type": "function",
+        "name": "remember",
+    }
+    assert llm_client.calls[1]["tool_choice"] is None
+
+
+def test_agent_does_not_force_a_tool_for_general_questions() -> None:
+    llm_client = FakeLLMClient(
+        responses=[
+            FakeResponse(
+                id="response-1",
+                output_text="Kafka is an event streaming platform.",
+                output=[],
+            )
+        ]
+    )
+
+    agent = Agent(
+        llm_client=llm_client,
+        tool_registry=ToolRegistry(),
+    )
+
+    result = agent.ask("What is Kafka?")
+
+    assert result == "Kafka is an event streaming platform."
+    assert llm_client.calls[0]["tool_choice"] is None
+
+
+def test_agent_forces_forget_tool_for_explicit_memory_request() -> None:
+    llm_client = FakeLLMClient(
+        responses=[
+            FakeResponse(
+                id="response-1",
+                output_text="",
+                output=[
+                    FakeFunctionCall(
+                        type="function_call",
+                        name="forget",
+                        arguments='{"key": "language"}',
+                        call_id="call-1",
+                    )
+                ],
+            ),
+            FakeResponse(
+                id="response-2",
+                output_text="I have forgotten your preferred language.",
+                output=[],
+            ),
+        ]
+    )
+
+    memory = SessionMemory()
+    memory.remember("language", "Python")
+
+    tool_registry = ToolRegistry()
+    tool_registry.register(ForgetTool(memory))
+
+    agent = Agent(
+        llm_client=llm_client,
+        tool_registry=tool_registry,
+    )
+
+    result = agent.ask("Forget my preferred language.")
+
+    assert result == "I have forgotten your preferred language."
+    assert memory.get("language") is None
+    assert llm_client.calls[0]["tool_choice"] == {
+        "type": "function",
+        "name": "forget",
+    }
+
+
+def test_agent_forces_get_memory_tool_for_retrieval_request() -> None:
+    llm_client = FakeLLMClient(
+        responses=[
+            FakeResponse(
+                id="response-1",
+                output_text="",
+                output=[
+                    FakeFunctionCall(
+                        type="function_call",
+                        name="get_memory",
+                        arguments='{"key": "language"}',
+                        call_id="call-1",
+                    )
+                ],
+            ),
+            FakeResponse(
+                id="response-2",
+                output_text="You told me that you prefer Python.",
+                output=[],
+            ),
+        ]
+    )
+
+    memory = SessionMemory()
+    memory.remember("language", "Python")
+
+    tool_registry = ToolRegistry()
+    tool_registry.register(GetMemoryTool(memory))
+
+    agent = Agent(
+        llm_client=llm_client,
+        tool_registry=tool_registry,
+    )
+
+    result = agent.ask("What did I tell you about my preferred language?")
+
+    assert result == "You told me that you prefer Python."
+    assert memory.get("language") == "Python"
+    assert llm_client.calls[0]["tool_choice"] == {
+        "type": "function",
+        "name": "get_memory",
+    }
