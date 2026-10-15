@@ -5,6 +5,7 @@ from openai.types.responses import ResponseFunctionToolCall
 
 from learning_agent.llm import LLMClient
 from learning_agent.tool_registry import ToolRegistry
+from learning_agent.tool_router import ToolRouter
 
 
 logger = logging.getLogger("Agent")
@@ -17,9 +18,11 @@ class Agent:
         self,
         llm_client: LLMClient,
         tool_registry: ToolRegistry,
+        tool_router: ToolRouter | None = None,
     ) -> None:
         self.llm_client = llm_client
         self.tool_registry = tool_registry
+        self.tool_router = tool_router or ToolRouter()
         self.previous_response_id: str | None = None
 
         self.instructions = (
@@ -48,6 +51,7 @@ class Agent:
             instructions=self.instructions,
             tools=self.tools,
             previous_response_id=self.previous_response_id,
+            tool_choice=self.tool_router.route(question),
         )
 
         for step in range(1, self.MAX_STEPS + 1):
