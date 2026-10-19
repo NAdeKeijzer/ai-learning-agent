@@ -43,6 +43,10 @@ class Agent:
 
         self.tools = self.tool_registry.definitions
 
+    def reset_conversation(self) -> None:
+        """Start a new conversation by clearing the previous response ID."""
+        self.previous_response_id = None
+
     def ask(self, question: str) -> str:
         logger.info("New user question received")
 
