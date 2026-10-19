@@ -77,6 +77,43 @@ def test_agent_returns_direct_llm_answer() -> None:
     assert len(llm_client.calls) == 1
 
 
+def test_agent_can_reset_conversation() -> None:
+    llm_client = FakeLLMClient(
+        responses=[
+            FakeResponse(
+                id="response-1",
+                output_text="First answer.",
+                output=[],
+            ),
+            FakeResponse(
+                id="response-2",
+                output_text="Follow-up answer.",
+                output=[],
+            ),
+            FakeResponse(
+                id="response-3",
+                output_text="Answer in a new conversation.",
+                output=[],
+            ),
+        ]
+    )
+
+    agent = Agent(
+        llm_client=llm_client,
+        tool_registry=ToolRegistry(),
+    )
+
+    agent.ask("First question?")
+    agent.ask("Follow-up question?")
+    agent.reset_conversation()
+    agent.ask("Question in a new conversation?")
+
+    assert llm_client.calls[0]["previous_response_id"] is None
+    assert llm_client.calls[1]["previous_response_id"] == "response-1"
+    assert llm_client.calls[2]["previous_response_id"] is None
+    assert agent.previous_response_id == "response-3"
+
+
 def test_agent_executes_tool_call_and_returns_final_answer() -> None:
     llm_client = FakeLLMClient(
         responses=[
