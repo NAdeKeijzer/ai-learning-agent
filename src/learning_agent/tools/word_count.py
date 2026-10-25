@@ -8,7 +8,7 @@ logger = logging.getLogger("WordCount")
 class WordCountTool:
     @property
     def name(self) -> str:
-        return "count_words"
+        return "word_count"
 
     @property
     def definition(self) -> dict[str, Any]:

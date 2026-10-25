@@ -18,7 +18,7 @@ def configure_logging() -> None:
     logging.getLogger("httpx").setLevel(logging.WARNING)
 
 
-def create_agent() -> Agent:
+def create_agent(llm_client: LLMClient | None = None) -> Agent:
     """Create an agent with all available tools."""
     memory = SessionMemory()
 
@@ -30,7 +30,7 @@ def create_agent() -> Agent:
     tool_registry.register(ForgetTool(memory))
 
     return Agent(
-        llm_client=LLMClient(),
+        llm_client=llm_client if llm_client is not None else LLMClient(),
         tool_registry=tool_registry,
     )
 
