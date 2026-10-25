@@ -85,13 +85,25 @@ class Agent:
 
         raise RuntimeError(f"Agent reached the maximum of {self.MAX_STEPS} steps.")
 
-    def _execute_tool_call(
-        self,
-        tool_call: ResponseFunctionToolCall,
-    ) -> dict[str, str]:
+    def _execute_tool_call(self, tool_call: ResponseFunctionToolCall) -> dict[str, str]:
         logger.info("Tool requested: %s", tool_call.name)
 
-        arguments = json.loads(tool_call.arguments)
+        try:
+            arguments = json.loads(tool_call.arguments)
+        except json.JSONDecodeError:
+            logger.warning(
+                "Invalid JSON arguments received for tool %s",
+                tool_call.name,
+            )
+            return {
+                "type": "function_call_output",
+                "call_id": tool_call.call_id,
+                "output": (
+                    "Error: Tool arguments were not valid JSON. "
+                    "Please retry with valid JSON."
+                ),
+            }
+
         tool = self.tool_registry.get(tool_call.name)
         result = tool.execute(arguments)
 
