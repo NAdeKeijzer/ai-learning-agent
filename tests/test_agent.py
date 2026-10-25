@@ -259,6 +259,93 @@ def test_agent_raises_error_for_unknown_tool() -> None:
         agent.ask("Use an unknown tool.")
 
 
+def test_agent_sends_error_for_invalid_tool_arguments() -> None:
+    llm_client = FakeLLMClient(
+        responses=[
+            FakeResponse(
+                id="response-1",
+                output_text="",
+                output=[
+                    FakeFunctionCall(
+                        type="function_call",
+                        name="calculator",
+                        arguments="{invalid json",
+                        call_id="call-1",
+                    )
+                ],
+            ),
+            FakeResponse(
+                id="response-2",
+                output_text="I couldn't process the calculator arguments.",
+                output=[],
+            ),
+        ]
+    )
+
+    tool_registry = ToolRegistry()
+    tool_registry.register(CalculatorTool())
+
+    agent = Agent(
+        llm_client=llm_client,
+        tool_registry=tool_registry,
+    )
+
+    answer = agent.ask("Calculate something.")
+
+    assert answer == "I couldn't process the calculator arguments."
+    assert len(llm_client.calls) == 2
+
+    tool_output = llm_client.calls[1]["input_data"][0]
+    assert tool_output["type"] == "function_call_output"
+    assert tool_output["call_id"] == "call-1"
+    assert "not valid JSON" in tool_output["output"]
+
+
+def test_agent_recovers_from_invalid_tool_arguments() -> None:
+    llm_client = FakeLLMClient(
+        responses=[
+            FakeResponse(
+                id="response-1",
+                output_text="",
+                output=[
+                    FakeFunctionCall(
+                        type="function_call",
+                        name="calculator",
+                        arguments="{invalid json",
+                        call_id="call-1",
+                    )
+                ],
+            ),
+            FakeResponse(
+                id="response-2",
+                output_text="The result is 42.",
+                output=[],
+            ),
+        ]
+    )
+
+    tool_registry = ToolRegistry()
+    tool_registry.register(CalculatorTool())
+
+    agent = Agent(
+        llm_client=llm_client,
+        tool_registry=tool_registry,
+    )
+
+    answer = agent.ask("Calculate something.")
+
+    assert answer == "The result is 42."
+    assert len(llm_client.calls) == 2
+    assert llm_client.calls[1]["previous_response_id"] == "response-1"
+
+    tool_output = llm_client.calls[1]["input_data"][0]
+    assert tool_output["type"] == "function_call_output"
+    assert tool_output["call_id"] == "call-1"
+    assert "not valid JSON" in tool_output["output"]
+
+    assert agent.previous_response_id == "response-2"
+
+
 def test_agent_raises_error_when_max_steps_is_reached() -> None:
     responses = [
         FakeResponse(
