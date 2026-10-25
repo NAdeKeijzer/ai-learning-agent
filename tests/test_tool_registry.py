@@ -50,7 +50,7 @@ def test_definitions_contains_registered_tools(
     assert len(definitions) == 2
     assert {definition["name"] for definition in definitions} == {
         "calculator",
-        "count_words",
+        "word_count",
     }
 
 

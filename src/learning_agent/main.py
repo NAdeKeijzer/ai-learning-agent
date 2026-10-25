@@ -2,8 +2,12 @@ import logging
 
 from learning_agent.agent import Agent
 from learning_agent.llm import LLMClient
+from learning_agent.memory import SessionMemory
 from learning_agent.tool_registry import ToolRegistry
 from learning_agent.tools import CalculatorTool, WordCountTool
+from learning_agent.tools.forget import ForgetTool
+from learning_agent.tools.get_memory import GetMemoryTool
+from learning_agent.tools.remember import RememberTool
 
 
 def configure_logging() -> None:
@@ -14,19 +18,26 @@ def configure_logging() -> None:
     logging.getLogger("httpx").setLevel(logging.WARNING)
 
 
-def main() -> None:
-    configure_logging()
-
-    llm_client = LLMClient()
+def create_agent(llm_client: LLMClient | None = None) -> Agent:
+    """Create an agent with all available tools."""
+    memory = SessionMemory()
 
     tool_registry = ToolRegistry()
     tool_registry.register(CalculatorTool())
     tool_registry.register(WordCountTool())
+    tool_registry.register(RememberTool(memory))
+    tool_registry.register(GetMemoryTool(memory))
+    tool_registry.register(ForgetTool(memory))
 
-    agent = Agent(
-        llm_client=llm_client,
+    return Agent(
+        llm_client=llm_client if llm_client is not None else LLMClient(),
         tool_registry=tool_registry,
     )
+
+
+def main() -> None:
+    configure_logging()
+    agent = create_agent()
 
     print("AI learning agent")
     print("Type 'exit' to quit.\n")
@@ -42,7 +53,6 @@ def main() -> None:
             continue
 
         answer = agent.ask(question)
-
         print(f"\nAI: {answer}\n")
 
 
