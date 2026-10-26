@@ -85,27 +85,55 @@ class Agent:
 
         raise RuntimeError(f"Agent reached the maximum of {self.MAX_STEPS} steps.")
 
-    def _execute_tool_call(self, tool_call: ResponseFunctionToolCall) -> dict[str, str]:
+    def _execute_tool_call(
+        self,
+        tool_call: ResponseFunctionToolCall,
+    ) -> dict[str, str]:
         logger.info("Tool requested: %s", tool_call.name)
 
         try:
             arguments = json.loads(tool_call.arguments)
-        except json.JSONDecodeError:
+        except json.JSONDecodeError as error:
+            error_message = f"Tool arguments are not valid JSON: {error.msg}"
             logger.warning(
-                "Invalid JSON arguments received for tool %s",
+                "Invalid arguments for tool %s: %s",
+                tool_call.name,
+                error_message,
+            )
+            return {
+                "type": "function_call_output",
+                "call_id": tool_call.call_id,
+                "output": error_message,
+            }
+
+        try:
+            tool = self.tool_registry.get(tool_call.name)
+        except ValueError as error:
+            error_message = str(error)
+            logger.warning(
+                "Tool lookup failed for %s: %s",
+                tool_call.name,
+                error_message,
+            )
+            return {
+                "type": "function_call_output",
+                "call_id": tool_call.call_id,
+                "output": error_message,
+            }
+
+        try:
+            result = tool.execute(arguments)
+        except Exception as error:
+            error_message = f"Tool execution failed: {error}"
+            logger.exception(
+                "Tool execution failed for %s",
                 tool_call.name,
             )
             return {
                 "type": "function_call_output",
                 "call_id": tool_call.call_id,
-                "output": (
-                    "Error: Tool arguments were not valid JSON. "
-                    "Please retry with valid JSON."
-                ),
+                "output": error_message,
             }
-
-        tool = self.tool_registry.get(tool_call.name)
-        result = tool.execute(arguments)
 
         return {
             "type": "function_call_output",
