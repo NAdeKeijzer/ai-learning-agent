@@ -54,6 +54,30 @@ class FakeLLMClient:
         return self.responses.pop(0)
 
 
+class FailingTool:
+    @property
+    def name(self) -> str:
+        return "failing_tool"
+
+    @property
+    def definition(self) -> dict[str, Any]:
+        return {
+            "type": "function",
+            "name": self.name,
+            "description": "A tool that fails during execution.",
+            "parameters": {
+                "type": "object",
+                "properties": {},
+                "required": [],
+                "additionalProperties": False,
+            },
+            "strict": True,
+        }
+
+    def execute(self, arguments: dict[str, Any]) -> str:
+        raise RuntimeError("Simulated tool failure")
+
+
 def test_agent_returns_direct_llm_answer() -> None:
     llm_client = FakeLLMClient(
         responses=[
@@ -229,7 +253,7 @@ def test_agent_handles_multiple_tool_calls() -> None:
     ]
 
 
-def test_agent_raises_error_for_unknown_tool() -> None:
+def test_agent_sends_error_for_unknown_tool() -> None:
     llm_client = FakeLLMClient(
         responses=[
             FakeResponse(
@@ -243,7 +267,12 @@ def test_agent_raises_error_for_unknown_tool() -> None:
                         call_id="call-1",
                     )
                 ],
-            )
+            ),
+            FakeResponse(
+                id="response-2",
+                output_text="I couldn't use that tool.",
+                output=[],
+            ),
         ]
     )
 
@@ -252,11 +281,13 @@ def test_agent_raises_error_for_unknown_tool() -> None:
         tool_registry=ToolRegistry(),
     )
 
-    with pytest.raises(
-        ValueError,
-        match="Unknown tool: unknown_tool",
-    ):
-        agent.ask("Use an unknown tool.")
+    answer = agent.ask("Use an unknown tool.")
+
+    assert answer == "I couldn't use that tool."
+    tool_output = llm_client.calls[1]["input_data"][0]
+    assert tool_output["type"] == "function_call_output"
+    assert tool_output["call_id"] == "call-1"
+    assert "Unknown tool: unknown_tool" in tool_output["output"]
 
 
 def test_agent_sends_error_for_invalid_tool_arguments() -> None:
@@ -578,3 +609,43 @@ def test_agent_forces_get_memory_tool_for_retrieval_request() -> None:
         "type": "function",
         "name": "get_memory",
     }
+
+
+def test_agent_sends_error_when_tool_execution_fails() -> None:
+    llm_client = FakeLLMClient(
+        responses=[
+            FakeResponse(
+                id="response-1",
+                output_text="",
+                output=[
+                    FakeFunctionCall(
+                        type="function_call",
+                        name="failing_tool",
+                        arguments="{}",
+                        call_id="call-1",
+                    )
+                ],
+            ),
+            FakeResponse(
+                id="response-2",
+                output_text="The tool failed, so I couldn't complete that.",
+                output=[],
+            ),
+        ]
+    )
+
+    tool_registry = ToolRegistry()
+    tool_registry.register(FailingTool())
+
+    agent = Agent(
+        llm_client=llm_client,
+        tool_registry=tool_registry,
+    )
+
+    answer = agent.ask("Use the failing tool.")
+
+    assert answer == "The tool failed, so I couldn't complete that."
+    tool_output = llm_client.calls[1]["input_data"][0]
+    assert tool_output["type"] == "function_call_output"
+    assert tool_output["call_id"] == "call-1"
+    assert "Simulated tool failure" in tool_output["output"]
