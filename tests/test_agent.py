@@ -649,3 +649,42 @@ def test_agent_sends_error_when_tool_execution_fails() -> None:
     assert tool_output["type"] == "function_call_output"
     assert tool_output["call_id"] == "call-1"
     assert "Simulated tool failure" in tool_output["output"]
+
+
+def test_agent_returns_final_answer_after_last_tool_execution() -> None:
+    responses = [
+        FakeResponse(
+            id="response-1",
+            output_text="",
+            output=[
+                FakeFunctionCall(
+                    type="function_call",
+                    name="calculator",
+                    arguments='{"expression": "1 + 1"}',
+                    call_id="call-1",
+                )
+            ],
+        ),
+        FakeResponse(
+            id="response-2",
+            output_text="The result is 2.",
+            output=[],
+        ),
+    ]
+
+    llm_client = FakeLLMClient(responses=responses)
+
+    tool_registry = ToolRegistry()
+    tool_registry.register(CalculatorTool())
+
+    agent = Agent(
+        llm_client=llm_client,
+        tool_registry=tool_registry,
+    )
+
+    agent.MAX_STEPS = 1
+
+    answer = agent.ask("What is 1 + 1?")
+
+    assert answer == "The result is 2."
+    assert len(llm_client.calls) == 2

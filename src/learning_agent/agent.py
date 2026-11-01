@@ -83,6 +83,14 @@ class Agent:
                 previous_response_id=response.id,
             )
 
+        # Check the response received after the final allowed tool execution.
+        tool_calls = [item for item in response.output if item.type == "function_call"]
+
+        if not tool_calls:
+            logger.info("No tool calls; final answer received")
+            self.previous_response_id = response.id
+            return response.output_text
+
         raise RuntimeError(f"Agent reached the maximum of {self.MAX_STEPS} steps.")
 
     def _execute_tool_call(
